@@ -10,6 +10,7 @@
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	
+	<groupId>com.github.hiwepy</groupId>
 	<artifactId>security-unionid-spring-boot-starter</artifactId>
 	<description>Spring Boot Starter For Spring Security With UnionID OF Thirdparty Platform </description>
 	<version>1.0.0-SNAPSHOT</version>
