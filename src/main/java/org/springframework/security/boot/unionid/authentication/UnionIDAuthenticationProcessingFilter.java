@@ -71,14 +71,14 @@ public class UnionIDAuthenticationProcessingFilter extends AbstractAuthenticatio
 		if(WebUtils.isObjectRequest(request)) {
 			
 			UnionIDLoginRequest loginRequest = objectMapper.readValue(request.getReader(), UnionIDLoginRequest.class);
-	 		authRequest = this.authenticationToken( loginRequest.getPlatform(), loginRequest.getUnionid(), loginRequest.getToken());
+	 		authRequest = this.authenticationToken( loginRequest);
 
 		} else {
 			
 	 		String platform = obtainPlatform(request);
 			String unionid = obtainUnionid(request);
 			String token = obtainToken(request);
-			authRequest = this.authenticationToken( platform, unionid, token);
+			authRequest = this.authenticationToken( new UnionIDLoginRequest(platform, unionid, token));
 	 		
 		}
 
@@ -89,8 +89,8 @@ public class UnionIDAuthenticationProcessingFilter extends AbstractAuthenticatio
 
     }
     
-	protected AbstractAuthenticationToken authenticationToken(String platform, String unionid, String token) {
-		return new UnionIDAuthenticationToken( platform, unionid, token);
+	protected AbstractAuthenticationToken authenticationToken(UnionIDLoginRequest loginRequest) {
+		return new UnionIDAuthenticationToken( loginRequest);
 	}
 
 	protected String obtainPlatform(HttpServletRequest request) {

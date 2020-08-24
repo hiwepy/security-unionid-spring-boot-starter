@@ -47,7 +47,13 @@ public class UnionIDAuthenticationProvider implements AuthenticationProvider {
 			logger.debug("Processing authentication request : " + authentication);
 		}
         
+    	UnionIDLoginRequest loginRequest = (UnionIDLoginRequest) authentication.getPrincipal();
+        
     	UnionIDAuthenticationToken authcToken = (UnionIDAuthenticationToken) authentication;
+    	authcToken.setPlatform(loginRequest.getPlatform());
+    	authcToken.setUnionid(loginRequest.getUnionid());
+		authcToken.setToken(loginRequest.getToken());
+		
 		
         // load user details by face info
 		UserDetails ud = getUserDetailsService().loadUserDetails(authentication);
@@ -56,9 +62,9 @@ public class UnionIDAuthenticationProvider implements AuthenticationProvider {
         
         UnionIDAuthenticationToken authenticationToken = null;
         if(SecurityPrincipal.class.isAssignableFrom(ud.getClass())) {
-        	authenticationToken = new UnionIDAuthenticationToken(authcToken.getPlatform(), ud, ud.getPassword(), ud.getAuthorities());        	
+        	authenticationToken = new UnionIDAuthenticationToken(ud, ud.getPassword(), ud.getAuthorities());        	
         } else {
-        	authenticationToken = new UnionIDAuthenticationToken(authcToken.getPlatform(), ud.getUsername(), ud.getPassword(), ud.getAuthorities());
+        	authenticationToken = new UnionIDAuthenticationToken(ud.getUsername(), ud.getPassword(), ud.getAuthorities());
 		}
         authenticationToken.setDetails(authentication.getDetails());
         

@@ -23,25 +23,26 @@ import org.springframework.security.core.SpringSecurityCoreVersion;
 public class UnionIDAuthenticationToken extends AbstractAuthenticationToken {
     
     private static final long serialVersionUID = SpringSecurityCoreVersion.SERIAL_VERSION_UID;
+
+    private final Object principal;
+    private Object credentials;
     
     // 第三方平台类型
    	private String platform;
     // 第三方平台 UnionID
-    private final Object principal;
+   	private String unionid;
     // 第三方平台 Token（部分平台需要进行安全验证）
-    private Object credentials;
+   	private String token;    
+    
 
-    public UnionIDAuthenticationToken(String platform, Object principal,  Object credentials) {
+    public UnionIDAuthenticationToken(Object principal) {
         super(null);
         this.principal = principal;
-        this.platform = platform;
-        this.credentials = credentials;
         setAuthenticated(false);
     }
     
-    public UnionIDAuthenticationToken(String platform, Object principal,  Object credentials, Collection<? extends GrantedAuthority> authorities) {
+    public UnionIDAuthenticationToken( Object principal,  Object credentials, Collection<? extends GrantedAuthority> authorities) {
         super(authorities);
-        this.platform = platform;
         this.principal = principal;
         this.credentials = credentials;
         super.setAuthenticated(true); // must use super, as we override
@@ -75,6 +76,26 @@ public class UnionIDAuthenticationToken extends AbstractAuthenticationToken {
 
 	public String getPlatform() {
 		return platform;
+	}
+
+	public void setPlatform(String platform) {
+		this.platform = platform;
+	}
+
+	public String getUnionid() {
+		return unionid;
+	}
+
+	public void setUnionid(String unionid) {
+		this.unionid = unionid;
+	}
+
+	public String getToken() {
+		return token;
+	}
+
+	public void setToken(String token) {
+		this.token = token;
 	}
 
 }
