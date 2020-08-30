@@ -6,7 +6,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.boot.biz.userdetails.JwtPayloadRepository;
 import org.springframework.security.boot.biz.userdetails.UserDetailsServiceAdapter;
 import org.springframework.security.boot.unionid.authentication.UnionIDAuthenticationProvider;
 import org.springframework.security.boot.unionid.authentication.UnionIDMatchedAuthenticationEntryPoint;
@@ -31,11 +30,10 @@ public class SecurityUnionIDAutoConfiguration {
 		return new UnionIDMatchedAuthenticationFailureHandler();
 	}
 	
-	
 	@Bean
 	@ConditionalOnMissingBean
-	public UnionIDMatchedAuthenticationSuccessHandler unionidMatchedAuthenticationSuccessHandler(JwtPayloadRepository payloadRepository) {
-		return new UnionIDMatchedAuthenticationSuccessHandler(payloadRepository);
+	public UnionIDMatchedAuthenticationSuccessHandler unionidMatchedAuthenticationSuccessHandler() {
+		return new UnionIDMatchedAuthenticationSuccessHandler();
 	}
 	
 	@Bean
