@@ -11,11 +11,14 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.boot.biz.SpringSecurityBizMessageSource;
 import org.springframework.security.boot.biz.authentication.nested.MatchedAuthenticationSuccessHandler;
 import org.springframework.security.boot.biz.exception.AuthResponse;
 import org.springframework.security.boot.biz.exception.AuthResponseCode;
+import org.springframework.security.boot.biz.userdetails.JwtPayloadRepository;
 import org.springframework.security.boot.biz.userdetails.SecurityPrincipal;
+import org.springframework.security.boot.biz.userdetails.UserProfilePayload;
 import org.springframework.security.boot.utils.SubjectUtils;
 import org.springframework.security.core.Authentication;
 
@@ -28,6 +31,12 @@ import com.alibaba.fastjson.JSONObject;
 public class UnionIDMatchedAuthenticationSuccessHandler implements MatchedAuthenticationSuccessHandler {
    
 	protected MessageSourceAccessor messages = SpringSecurityBizMessageSource.getAccessor();
+	private JwtPayloadRepository payloadRepository;
+	private boolean checkExpiry = false;
+	
+	public UnionIDMatchedAuthenticationSuccessHandler(JwtPayloadRepository payloadRepository) {
+		this.setPayloadRepository(payloadRepository);
+	}
 	
 	@Override
 	public boolean supports(Authentication authentication) {
@@ -44,11 +53,31 @@ public class UnionIDMatchedAuthenticationSuccessHandler implements MatchedAuthen
 		response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 		// 国际化后的异常信息
 		String message = messages.getMessage(AuthResponseCode.SC_AUTHC_SUCCESS.getMsgKey(), LocaleContextHolder.getLocale());
-		// 写出JSON
-		// 利用登陆用户信息
+		// 用户信息
 		SecurityPrincipal principal = (SecurityPrincipal) authentication.getPrincipal();
-		JSONObject.writeJSONString(response.getWriter(), AuthResponse.success(message, principal.toPayload()));
-    	 
+		UserProfilePayload profilePayload = null;
+		if(principal.isBound()){
+			profilePayload = getPayloadRepository().getProfilePayload((AbstractAuthenticationToken) authentication, isCheckExpiry());
+		} else {
+			profilePayload = principal.toPayload();
+		}
+		JSONObject.writeJSONString(response.getWriter(), AuthResponse.success(message, profilePayload));
     }
+    
+	public JwtPayloadRepository getPayloadRepository() {
+		return payloadRepository;
+	}
+
+	public void setPayloadRepository(JwtPayloadRepository payloadRepository) {
+		this.payloadRepository = payloadRepository;
+	}
+
+	public boolean isCheckExpiry() {
+		return checkExpiry;
+	}
+
+	public void setCheckExpiry(boolean checkExpiry) {
+		this.checkExpiry = checkExpiry;
+	}
 
 }
