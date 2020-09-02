@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.biz.web.servlet.i18n.LocaleContextFilter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -50,12 +51,14 @@ public class SecurityUnionIDFilterConfiguration {
 	    private final ObjectMapper objectMapper;
     	private final RememberMeServices rememberMeServices;
 		private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
-	
+		private final LocaleContextFilter localeContextFilter;
+		
 		public UnionIDWebSecurityConfigurerAdapter(
    				
 				SecurityBizProperties bizProperties,
 				SecurityUnionIDAuthcProperties authcProperties,
 				
+				ObjectProvider<LocaleContextFilter> localeContextProvider,
 				ObjectProvider<AuthenticationProvider> authenticationProvider,
    				ObjectProvider<AuthenticationManager> authenticationManagerProvider,
    				ObjectProvider<AuthenticationListener> authenticationListenerProvider,
@@ -69,6 +72,7 @@ public class SecurityUnionIDFilterConfiguration {
 					authenticationManagerProvider.getIfAvailable());
    			
 			this.authcProperties = authcProperties;
+			this.localeContextFilter = localeContextProvider.getIfAvailable();
    			List<AuthenticationListener> authenticationListeners = authenticationListenerProvider.stream().collect(Collectors.toList());
    			this.authenticationSuccessHandler = super.authenticationSuccessHandler(authenticationListeners, authenticationSuccessHandlerProvider.stream().collect(Collectors.toList()));
    			this.authenticationFailureHandler = super.authenticationFailureHandler(authenticationListeners, authenticationFailureHandlerProvider.stream().collect(Collectors.toList()));
@@ -107,6 +111,7 @@ public class SecurityUnionIDFilterConfiguration {
 			
    	    	http.httpBasic().disable()
    	        	.antMatcher(authcProperties.getPathPattern())
+   	        	.addFilterBefore(localeContextFilter, UsernamePasswordAuthenticationFilter.class)
    	        	.addFilterBefore(authenticationProcessingFilter(), UsernamePasswordAuthenticationFilter.class); 
    	    	
    	    	super.configure(http, authcProperties.getCors());
