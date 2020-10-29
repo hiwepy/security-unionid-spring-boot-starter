@@ -51,7 +51,7 @@ public class UnionIDMatchedAuthenticationSuccessHandler implements MatchedAuthen
 		response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 		response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 		// 国际化后的异常信息
-		String message = messages.getMessage(AuthResponseCode.SC_AUTHC_SUCCESS.getMsgKey());
+		String message = messages.getMessage(AuthResponseCode.SC_SUCCESS.getMsgKey());
 		// 用户信息
 		SecurityPrincipal principal = (SecurityPrincipal) authentication.getPrincipal();
 		UserProfilePayload profilePayload = null;
