@@ -24,17 +24,17 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.boot.biz.SpringSecurityBizMessageSource;
-import org.springframework.security.boot.biz.exception.AuthResponseCode;
-import org.springframework.security.boot.biz.exception.AuthenticationMethodNotSupportedException;
+import org.springframework.security.boot.biz.authentication.PostOnlyAuthenticationProcessingFilter;
 import org.springframework.security.boot.utils.WebUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class UnionIDAuthenticationProcessingFilter extends AbstractAuthenticationProcessingFilter {
+public class UnionIDAuthenticationProcessingFilter extends PostOnlyAuthenticationProcessingFilter {
 
 	protected MessageSourceAccessor messages = SpringSecurityBizMessageSource.getAccessor();
 	protected ObjectMapper objectMapper = new ObjectMapper();
@@ -46,7 +46,6 @@ public class UnionIDAuthenticationProcessingFilter extends AbstractAuthenticatio
 	private String platformParameter = SPRING_SECURITY_FORM_PLATFORM_KEY;
 	private String unionidParameter = SPRING_SECURITY_FORM_UNIONID_KEY;
 	private String tokenParameter = SPRING_SECURITY_FORM_TOKEN_KEY;
-    private boolean postOnly = true;
 	
     public UnionIDAuthenticationProcessingFilter(ObjectMapper objectMapper) {
     	super(new AntPathRequestMatcher("/login/unionid", "POST"));
@@ -54,16 +53,11 @@ public class UnionIDAuthenticationProcessingFilter extends AbstractAuthenticatio
     }
 
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+    public Authentication doAttemptAuthentication(HttpServletRequest request, HttpServletResponse response)
             throws AuthenticationException, IOException, ServletException {
-
-    	if (isPostOnly() && !WebUtils.isPostRequest(request) ) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Authentication method not supported. Request method: " + request.getMethod());
-			}
-			throw new AuthenticationMethodNotSupportedException(messages.getMessage(AuthResponseCode.SC_AUTHC_METHOD_NOT_ALLOWED.getMsgKey(), new Object[] { request.getMethod() }, 
-					"Authentication method not supported. Request method:" + request.getMethod()));
-		}
+    	
+    	ServletRequestAttributes requestAttributes = new ServletRequestAttributes(request, response);
+		RequestContextHolder.setRequestAttributes(requestAttributes, true);
  
 		AbstractAuthenticationToken authRequest = null;
 		
@@ -71,14 +65,14 @@ public class UnionIDAuthenticationProcessingFilter extends AbstractAuthenticatio
 		if(WebUtils.isObjectRequest(request)) {
 			
 			UnionIDLoginRequest loginRequest = objectMapper.readValue(request.getReader(), UnionIDLoginRequest.class);
-	 		authRequest = this.authenticationToken( loginRequest);
+	 		authRequest = this.authenticationToken( request, loginRequest);
 
 		} else {
 			
 	 		String platform = obtainPlatform(request);
 			String unionid = obtainUnionid(request);
 			String token = obtainToken(request);
-			authRequest = this.authenticationToken( new UnionIDLoginRequest(platform, unionid, token));
+			authRequest = this.authenticationToken( request, new UnionIDLoginRequest(platform, unionid, token) );
 	 		
 		}
 
@@ -89,8 +83,12 @@ public class UnionIDAuthenticationProcessingFilter extends AbstractAuthenticatio
 
     }
     
-	protected AbstractAuthenticationToken authenticationToken(UnionIDLoginRequest loginRequest) {
-		return new UnionIDAuthenticationToken( loginRequest);
+	protected AbstractAuthenticationToken authenticationToken(HttpServletRequest request, UnionIDLoginRequest loginRequest) {
+		UnionIDAuthenticationToken token = new UnionIDAuthenticationToken( loginRequest);
+		token.setAppId(this.obtainAppId(request));
+		token.setAppChannel(this.obtainAppChannel(request));
+		token.setAppVersion(this.obtainAppVersion(request));
+		return token;
 	}
 
 	protected String obtainPlatform(HttpServletRequest request) {
@@ -141,14 +139,6 @@ public class UnionIDAuthenticationProcessingFilter extends AbstractAuthenticatio
 
 	public void setTokenParameter(String tokenParameter) {
 		this.tokenParameter = tokenParameter;
-	}
-
-	public boolean isPostOnly() {
-		return postOnly;
-	}
-
-	public void setPostOnly(boolean postOnly) {
-		this.postOnly = postOnly;
 	}
 
 }

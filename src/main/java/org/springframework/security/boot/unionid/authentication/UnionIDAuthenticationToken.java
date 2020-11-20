@@ -27,13 +27,30 @@ public class UnionIDAuthenticationToken extends AbstractAuthenticationToken {
     private final Object principal;
     private Object credentials;
     
-    // 第三方平台类型
-   	private String platform;
-    // 第三方平台 UnionID
-   	private String unionid;
-    // 第三方平台 Token（部分平台需要进行安全验证）
-   	private String token;    
-    
+    /**
+	 * 第三方平台类型
+	 */
+	private String platform;
+	/**
+	 * 第三方平台 UnionID
+	 */
+	private String unionid;
+	/**
+	 * 第三方平台 Token（部分平台需要进行安全验证）
+	 */
+	private String token;
+	/**
+	 * 登录的客户端应用ID
+	 */
+	private String appId;
+	/**
+	 * 登录的客户端应用渠道编码
+	 */
+	private String appChannel;
+	/**
+	 *登录的客户端版本
+	 */
+	private String appVersion;
 
     public UnionIDAuthenticationToken(Object principal) {
         super(null);
@@ -96,6 +113,30 @@ public class UnionIDAuthenticationToken extends AbstractAuthenticationToken {
 
 	public void setToken(String token) {
 		this.token = token;
+	}
+
+	public String getAppId() {
+		return appId;
+	}
+
+	public void setAppId(String appId) {
+		this.appId = appId;
+	}
+
+	public String getAppChannel() {
+		return appChannel;
+	}
+
+	public void setAppChannel(String appChannel) {
+		this.appChannel = appChannel;
+	}
+
+	public String getAppVersion() {
+		return appVersion;
+	}
+
+	public void setAppVersion(String appVersion) {
+		this.appVersion = appVersion;
 	}
 
 }
