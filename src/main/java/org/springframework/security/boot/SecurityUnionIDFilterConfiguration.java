@@ -22,6 +22,7 @@ import org.springframework.security.boot.biz.authentication.nested.MatchedAuthen
 import org.springframework.security.boot.biz.authentication.nested.MatchedAuthenticationSuccessHandler;
 import org.springframework.security.boot.biz.property.SecuritySessionMgtProperties;
 import org.springframework.security.boot.unionid.authentication.UnionIDAuthenticationProcessingFilter;
+import org.springframework.security.boot.utils.WebSecurityUtils;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -30,7 +31,6 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
-import org.springframework.security.web.savedrequest.RequestCache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -50,14 +50,13 @@ public class SecurityUnionIDFilterConfiguration {
 
 	    private final SecurityUnionIDAuthcProperties authcProperties;
 
+		private final LocaleContextFilter localeContextFilter;
     	private final AuthenticationEntryPoint authenticationEntryPoint;
 	    private final AuthenticationSuccessHandler authenticationSuccessHandler;
 	    private final AuthenticationFailureHandler authenticationFailureHandler;
 	    private final ObjectMapper objectMapper;
-      	private final RequestCache requestCache;
       	private final RememberMeServices rememberMeServices;
 		private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
-		private final LocaleContextFilter localeContextFilter;
 		
 		public UnionIDWebSecurityConfigurerAdapter(
    				
@@ -73,23 +72,24 @@ public class SecurityUnionIDFilterConfiguration {
    				ObjectProvider<MatchedAuthenticationSuccessHandler> authenticationSuccessHandlerProvider,
    				ObjectProvider<MatchedAuthenticationFailureHandler> authenticationFailureHandlerProvider,
    				ObjectProvider<ObjectMapper> objectMapperProvider,
-   				ObjectProvider<RememberMeServices> rememberMeServicesProvider
+   				ObjectProvider<RememberMeServices> rememberMeServicesProvider,
+   				ObjectProvider<SessionAuthenticationStrategy> sessionAuthenticationStrategyProvider
    				
-				) {
+			) {
 			
-			super(bizProperties, authcProperties, sessionMgtProperties, authenticationProvider.stream().collect(Collectors.toList()),
-					authenticationManagerProvider.getIfAvailable());
+			super(bizProperties, sessionMgtProperties, authenticationProvider.stream().collect(Collectors.toList()));
    			
 			this.authcProperties = authcProperties;
+			
 			this.localeContextFilter = localeContextProvider.getIfAvailable();
-			List<AuthenticationListener> authenticationListeners = authenticationListenerProvider.stream().collect(Collectors.toList());
-   			this.authenticationEntryPoint = super.authenticationEntryPoint(authenticationEntryPointProvider.stream().collect(Collectors.toList()));
-   			this.authenticationSuccessHandler = super.authenticationSuccessHandler(authenticationListeners, authenticationSuccessHandlerProvider.stream().collect(Collectors.toList()));
-   			this.authenticationFailureHandler = super.authenticationFailureHandler(authenticationListeners, authenticationFailureHandlerProvider.stream().collect(Collectors.toList()));
+   			List<AuthenticationListener> authenticationListeners = authenticationListenerProvider.stream().collect(Collectors.toList());
+   			this.authenticationEntryPoint = WebSecurityUtils.authenticationEntryPoint(authcProperties, sessionMgtProperties, authenticationEntryPointProvider.stream().collect(Collectors.toList()));
+   			this.authenticationSuccessHandler = WebSecurityUtils.authenticationSuccessHandler(authcProperties, sessionMgtProperties, authenticationListeners, authenticationSuccessHandlerProvider.stream().collect(Collectors.toList()));
+   			this.authenticationFailureHandler = WebSecurityUtils.authenticationFailureHandler(authcProperties, sessionMgtProperties, authenticationListeners, authenticationFailureHandlerProvider.stream().collect(Collectors.toList()));
    			this.objectMapper = objectMapperProvider.getIfAvailable();
-   			this.requestCache = super.requestCache();
    			this.rememberMeServices = rememberMeServicesProvider.getIfAvailable();
-   			this.sessionAuthenticationStrategy = super.sessionAuthenticationStrategy();
+   			this.sessionAuthenticationStrategy = sessionAuthenticationStrategyProvider.getIfAvailable();
+   			
 		}
 
 		
@@ -120,16 +120,12 @@ public class SecurityUnionIDFilterConfiguration {
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
 			
-			http.requestCache()
-	        	.requestCache(requestCache)
-	        	.and()
+			http.antMatcher(authcProperties.getPathPattern())
 	        	.exceptionHandling()
 	        	.authenticationEntryPoint(authenticationEntryPoint)
 	        	.and()
 	        	.httpBasic()
-	        	.authenticationEntryPoint(authenticationEntryPoint)
-	        	.and()
-	        	.antMatcher(authcProperties.getPathPattern())
+	        	.disable()
    	        	.addFilterBefore(localeContextFilter, UsernamePasswordAuthenticationFilter.class)
    	        	.addFilterBefore(authenticationProcessingFilter(), UsernamePasswordAuthenticationFilter.class); 
    	    	
